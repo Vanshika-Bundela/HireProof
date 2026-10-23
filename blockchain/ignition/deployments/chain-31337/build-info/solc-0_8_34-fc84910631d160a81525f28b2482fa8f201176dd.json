@@ -1,0 +1,49 @@
+{
+  "_format": "hh3-sol-build-info-1",
+  "id": "solc-0_8_34-fc84910631d160a81525f28b2482fa8f201176dd",
+  "solcVersion": "0.8.34",
+  "solcLongVersion": "0.8.34+commit.80d5c536",
+  "compilerType": "solc",
+  "toolVersions": {
+    "hardhat": "3.19.0"
+  },
+  "userSourceNameMap": {
+    "contracts/HireProof.sol": "project/contracts/HireProof.sol"
+  },
+  "input": {
+    "language": "Solidity",
+    "settings": {
+      "evmVersion": "osaka",
+      "optimizer": {
+        "enabled": true,
+        "runs": 200
+      },
+      "outputSelection": {
+        "*": {
+          "": [
+            "ast"
+          ],
+          "*": [
+            "abi",
+            "evm.bytecode.linkReferences",
+            "evm.bytecode.object",
+            "evm.bytecode.opcodes",
+            "evm.bytecode.sourceMap",
+            "evm.deployedBytecode.immutableReferences",
+            "evm.deployedBytecode.linkReferences",
+            "evm.deployedBytecode.object",
+            "evm.deployedBytecode.opcodes",
+            "evm.deployedBytecode.sourceMap",
+            "evm.methodIdentifiers"
+          ]
+        }
+      },
+      "remappings": []
+    },
+    "sources": {
+      "project/contracts/HireProof.sol": {
+        "content": "\r\n // SPDX-License-Identifier: MIT\r\npragma solidity ^0.8.20;\r\n\r\ncontract HireProof {\r\n    struct Credential {\r\n        string credentialId;\r\n        string candidateName;\r\n        string credentialName;\r\n        string issuerName;\r\n        string credentialHash;\r\n        uint256 issueDate;\r\n        bool isValid;\r\n    }\r\n\r\n    address public admin;\r\n\r\n    mapping(address => bool) public isIssuer;\r\n    mapping(string => Credential) private credentials;\r\n    mapping(string => bool) private credentialExists;\r\n    mapping(string => address) public credentialIssuer;\r\n\r\n    event IssuerAuthorized(address indexed issuer);\r\n    event IssuerRemoved(address indexed issuer);\r\n\r\n    event CredentialIssued(\r\n        string indexed credentialId,\r\n        address indexed issuer,\r\n        uint256 issueDate\r\n    );\r\n\r\n    event CredentialRevoked(\r\n        string indexed credentialId,\r\n        address indexed revokedBy\r\n    );\r\n\r\n    constructor() {\r\n        admin = msg.sender;\r\n    }\r\n\r\n    modifier onlyAdmin() {\r\n        require(msg.sender == admin, \"Only admin can perform this action\");\r\n        _;\r\n    }\r\n\r\n    modifier onlyIssuer() {\r\n        require(isIssuer[msg.sender], \"Only authorized issuers can perform this action\");\r\n        _;\r\n    }\r\n\r\n    function authorizeIssuer(address _issuer) public onlyAdmin {\r\n        require(_issuer != address(0), \"Invalid issuer address\");\r\n        require(!isIssuer[_issuer], \"Address is already an issuer\");\r\n\r\n        isIssuer[_issuer] = true;\r\n        emit IssuerAuthorized(_issuer);\r\n    }\r\n\r\n    function removeIssuer(address _issuer) public onlyAdmin {\r\n        require(isIssuer[_issuer], \"Address is not an issuer\");\r\n\r\n        isIssuer[_issuer] = false;\r\n        emit IssuerRemoved(_issuer);\r\n    }\r\n\r\n    function issueCredential(\r\n        string memory _credentialId,\r\n        string memory _candidateName,\r\n        string memory _credentialName,\r\n        string memory _issuerName,\r\n        string memory _credentialHash\r\n    ) public onlyIssuer {\r\n        require(bytes(_credentialId).length > 0, \"Credential ID is required\");\r\n        require(bytes(_candidateName).length > 0, \"Candidate name is required\");\r\n        require(bytes(_credentialName).length > 0, \"Credential name is required\");\r\n        require(bytes(_issuerName).length > 0, \"Issuer name is required\");\r\n        require(bytes(_credentialHash).length > 0, \"Credential hash is required\");\r\n        require(!credentialExists[_credentialId], \"Credential already exists\");\r\n\r\n        credentials[_credentialId] = Credential({\r\n            credentialId: _credentialId,\r\n            candidateName: _candidateName,\r\n            credentialName: _credentialName,\r\n            issuerName: _issuerName,\r\n            credentialHash: _credentialHash,\r\n            issueDate: block.timestamp,\r\n            isValid: true\r\n        });\r\n\r\n        credentialExists[_credentialId] = true;\r\n        credentialIssuer[_credentialId] = msg.sender;\r\n\r\n        emit CredentialIssued(\r\n            _credentialId,\r\n            msg.sender,\r\n            block.timestamp\r\n        );\r\n    }\r\n\r\n    function verifyCredential(\r\n        string memory _credentialId\r\n    ) public view returns (Credential memory) {\r\n        require(credentialExists[_credentialId], \"Credential not found\");\r\n        return credentials[_credentialId];\r\n    }\r\n\r\n    function revokeCredential(\r\n        string memory _credentialId\r\n    ) public {\r\n        require(credentialExists[_credentialId], \"Credential not found\");\r\n        require(\r\n            msg.sender == admin ||\r\n            (isIssuer[msg.sender] &&\r\n                credentialIssuer[_credentialId] == msg.sender),\r\n            \"Not authorized to revoke this credential\"\r\n        );\r\n        require(credentials[_credentialId].isValid, \"Credential already revoked\");\r\n\r\n        credentials[_credentialId].isValid = false;\r\n\r\n        emit CredentialRevoked(_credentialId, msg.sender);\r\n    }\r\n}"
+      }
+    }
+  }
+}
